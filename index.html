@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css"><link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css"><link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>Candi Sojiwan Excavation Grid</title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script><script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/excavationgrids_2.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString') {
+              highlightLayer.setStyle({
+                color: '#ff001e',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#ff001e',
+                fillOpacity: 1
+              });
+            }
+        }
+        var map = L.map('map', {
+            zoomControl:true, maxZoom:28, minZoom:1
+        })
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0]
+        .innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0]
+        .className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            if (bounds_group.getLayers().length) {
+                map.fitBounds(bounds_group.getBounds());
+            }
+        }
+        map.createPane('pane_OSMStandard_0');
+        map.getPane('pane_OSMStandard_0').style.zIndex = 400;
+        var layer_OSMStandard_0 = L.tileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            pane: 'pane_OSMStandard_0',
+            opacity: 1.0,
+            attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors, CC-BY-SA</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 19
+        });
+        layer_OSMStandard_0;
+        map.addLayer(layer_OSMStandard_0);
+        map.createPane('pane_GoogleSatellite_1');
+        map.getPane('pane_GoogleSatellite_1').style.zIndex = 401;
+        var layer_GoogleSatellite_1 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleSatellite_1',
+            opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_GoogleSatellite_1;
+        map.addLayer(layer_GoogleSatellite_1);
+        function pop_excavationgrids_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (i in e.target._eventParents) {
+                        e.target._eventParents[i].resetStyle(e.target);
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Grid</th>\
+                        <td>' + (feature.properties['KOTAK'] !== null ? autolinker.link(feature.properties['KOTAK'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Column</th>\
+                        <td>' + (feature.properties['KOLOM'] !== null ? autolinker.link(feature.properties['KOLOM'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Row</th>\
+                        <td>' + (feature.properties['BARIS'] !== null ? autolinker.link(feature.properties['BARIS'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ID</th>\
+                        <td>' + (feature.properties['ID'] !== null ? autolinker.link(feature.properties['ID'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Year</th>\
+                        <td>' + (feature.properties['TAHUN'] !== null ? autolinker.link(feature.properties['TAHUN'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Findings</th>\
+                        <td>' + (feature.properties['TEMUAN'] !== null ? autolinker.link(feature.properties['TEMUAN'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Elevation</th>\
+                        <td>' + (feature.properties['PERM_MDPAL'] !== null ? autolinker.link(feature.properties['PERM_MDPAL'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">COLUMN</th>\
+                        <td>' + (feature.properties['COLUMN'] !== null ? autolinker.link(feature.properties['COLUMN'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ROW</th>\
+                        <td>' + (feature.properties['ROW'] !== null ? autolinker.link(feature.properties['ROW'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+
+        function style_excavationgrids_2_0() {
+            return {
+                pane: 'pane_excavationgrids_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,247,0,0.7450980392156863)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_excavationgrids_2');
+        map.getPane('pane_excavationgrids_2').style.zIndex = 402;
+        map.getPane('pane_excavationgrids_2').style['mix-blend-mode'] = 'normal';
+        var layer_excavationgrids_2 = new L.geoJson(json_excavationgrids_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_excavationgrids_2',
+            layerName: 'layer_excavationgrids_2',
+            pane: 'pane_excavationgrids_2',
+            onEachFeature: pop_excavationgrids_2,
+            style: style_excavationgrids_2_0,
+        });
+        bounds_group.addLayer(layer_excavationgrids_2);
+        map.addLayer(layer_excavationgrids_2);
+            var title = new L.Control();
+            title.onAdd = function (map) {
+                this._div = L.DomUtil.create('div', 'info');
+                this.update();
+                return this._div;
+            };
+            title.update = function () {
+                this._div.innerHTML = '<h2>Candi Sojiwan Excavation Grid</h2>';
+            };
+            title.addTo(map);
+            var abstract = new L.Control({'position':'bottomright'});
+            abstract.onAdd = function (map) {
+                this._div = L.DomUtil.create('div',
+                'leaflet-control abstract');
+                this._div.id = 'abstract'
+
+                    abstract.show();
+                    return this._div;
+                };
+                abstract.show = function () {
+                    this._div.classList.remove("abstract");
+                    this._div.classList.add("abstractUncollapsed");
+                    this._div.innerHTML = 'This is an 2x2 (meters) excavation grid map at Candi Sojiwan. ';
+            };
+            abstract.addTo(map);
+        var baseMaps = {};
+        L.control.layers(baseMaps,{'<img src="legend/excavationgrids_2.png" /> excavation grids': layer_excavationgrids_2,"Google Satellite": layer_GoogleSatellite_1,"OSM Standard": layer_OSMStandard_0,}).addTo(map);
+        setBounds();
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"COLUMN": "str","ROW": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_COLUMN = document.createElement('div');
+            div_COLUMN.id = "div_COLUMN";
+            div_COLUMN.className= "filterselect";
+            document.getElementById("menu").appendChild(div_COLUMN);
+            sel_COLUMN = document.createElement('select');
+            sel_COLUMN.multiple = true;
+            sel_COLUMN.size = 10;
+            sel_COLUMN.id = "sel_COLUMN";
+            var COLUMN_options_str = "<option value='' unselected></option>";
+            sel_COLUMN.onchange = function(){filterFunc()};
+            COLUMN_options_str  += '<option value="A">A</option>';
+            COLUMN_options_str  += '<option value="A&apos;">A&apos;</option>';
+            COLUMN_options_str  += '<option value="A&apos;&apos;">A&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="B">B</option>';
+            COLUMN_options_str  += '<option value="B&apos;">B&apos;</option>';
+            COLUMN_options_str  += '<option value="B&apos;&apos;">B&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="C">C</option>';
+            COLUMN_options_str  += '<option value="C&apos;">C&apos;</option>';
+            COLUMN_options_str  += '<option value="C&apos;&apos;">C&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="D">D</option>';
+            COLUMN_options_str  += '<option value="D&apos;">D&apos;</option>';
+            COLUMN_options_str  += '<option value="D&apos;&apos;">D&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="E">E</option>';
+            COLUMN_options_str  += '<option value="E&apos;">E&apos;</option>';
+            COLUMN_options_str  += '<option value="E&apos;&apos;">E&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="F">F</option>';
+            COLUMN_options_str  += '<option value="F&apos;">F&apos;</option>';
+            COLUMN_options_str  += '<option value="F&apos;&apos;">F&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="G">G</option>';
+            COLUMN_options_str  += '<option value="G&apos;">G&apos;</option>';
+            COLUMN_options_str  += '<option value="G&apos;&apos;">G&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="H">H</option>';
+            COLUMN_options_str  += '<option value="H&apos;">H&apos;</option>';
+            COLUMN_options_str  += '<option value="H&apos;&apos;">H&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="I">I</option>';
+            COLUMN_options_str  += '<option value="I&apos;">I&apos;</option>';
+            COLUMN_options_str  += '<option value="I&apos;&apos;">I&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="J">J</option>';
+            COLUMN_options_str  += '<option value="J&apos;">J&apos;</option>';
+            COLUMN_options_str  += '<option value="J&apos;&apos;">J&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="K">K</option>';
+            COLUMN_options_str  += '<option value="K&apos;">K&apos;</option>';
+            COLUMN_options_str  += '<option value="K&apos;&apos;">K&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="L">L</option>';
+            COLUMN_options_str  += '<option value="L&apos;">L&apos;</option>';
+            COLUMN_options_str  += '<option value="L&apos;&apos;">L&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="M">M</option>';
+            COLUMN_options_str  += '<option value="M&apos;">M&apos;</option>';
+            COLUMN_options_str  += '<option value="M&apos;&apos;">M&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="N">N</option>';
+            COLUMN_options_str  += '<option value="N&apos;">N&apos;</option>';
+            COLUMN_options_str  += '<option value="N&apos;&apos;">N&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="O">O</option>';
+            COLUMN_options_str  += '<option value="O&apos;">O&apos;</option>';
+            COLUMN_options_str  += '<option value="O&apos;&apos;">O&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="P">P</option>';
+            COLUMN_options_str  += '<option value="P&apos;">P&apos;</option>';
+            COLUMN_options_str  += '<option value="Q">Q</option>';
+            COLUMN_options_str  += '<option value="Q&apos;">Q&apos;</option>';
+            COLUMN_options_str  += '<option value="R">R</option>';
+            COLUMN_options_str  += '<option value="R&apos;">R&apos;</option>';
+            COLUMN_options_str  += '<option value="S">S</option>';
+            COLUMN_options_str  += '<option value="S&apos;">S&apos;</option>';
+            COLUMN_options_str  += '<option value="T">T</option>';
+            COLUMN_options_str  += '<option value="T&apos;">T&apos;</option>';
+            COLUMN_options_str  += '<option value="U">U</option>';
+            COLUMN_options_str  += '<option value="U&apos;">U&apos;</option>';
+            COLUMN_options_str  += '<option value="V">V</option>';
+            COLUMN_options_str  += '<option value="V&apos;">V&apos;</option>';
+            COLUMN_options_str  += '<option value="W">W</option>';
+            COLUMN_options_str  += '<option value="W&apos;">W&apos;</option>';
+            COLUMN_options_str  += '<option value="X">X</option>';
+            COLUMN_options_str  += '<option value="X&apos;">X&apos;</option>';
+            COLUMN_options_str  += '<option value="Y">Y</option>';
+            COLUMN_options_str  += '<option value="Y&apos;">Y&apos;</option>';
+            COLUMN_options_str  += '<option value="Z">Z</option>';
+            COLUMN_options_str  += '<option value="Z&apos;">Z&apos;</option>';
+            COLUMN_options_str  += '<option value="a">a</option>';
+            COLUMN_options_str  += '<option value="a&apos;">a&apos;</option>';
+            COLUMN_options_str  += '<option value="a&apos;&apos;">a&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="b">b</option>';
+            COLUMN_options_str  += '<option value="b&apos;">b&apos;</option>';
+            COLUMN_options_str  += '<option value="b&apos;&apos;">b&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="c">c</option>';
+            COLUMN_options_str  += '<option value="c&apos;">c&apos;</option>';
+            COLUMN_options_str  += '<option value="c&apos;&apos;">c&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="d">d</option>';
+            COLUMN_options_str  += '<option value="d&apos;">d&apos;</option>';
+            COLUMN_options_str  += '<option value="d&apos;&apos;">d&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="e">e</option>';
+            COLUMN_options_str  += '<option value="e&apos;">e&apos;</option>';
+            COLUMN_options_str  += '<option value="e&apos;&apos;">e&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="f">f</option>';
+            COLUMN_options_str  += '<option value="f&apos;">f&apos;</option>';
+            COLUMN_options_str  += '<option value="f&apos;&apos;">f&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="g">g</option>';
+            COLUMN_options_str  += '<option value="g&apos;">g&apos;</option>';
+            COLUMN_options_str  += '<option value="g&apos;&apos;">g&apos;&apos;</option>';
+            COLUMN_options_str  += '<option value="h">h</option>';
+            COLUMN_options_str  += '<option value="h&apos;">h&apos;</option>';
+            COLUMN_options_str  += '<option value="i">i</option>';
+            COLUMN_options_str  += '<option value="i&apos;">i&apos;</option>';
+            COLUMN_options_str  += '<option value="j">j</option>';
+            COLUMN_options_str  += '<option value="j&apos;">j&apos;</option>';
+            COLUMN_options_str  += '<option value="k">k</option>';
+            COLUMN_options_str  += '<option value="k&apos;">k&apos;</option>';
+            COLUMN_options_str  += '<option value="l">l</option>';
+            COLUMN_options_str  += '<option value="l&apos;">l&apos;</option>';
+            COLUMN_options_str  += '<option value="m">m</option>';
+            COLUMN_options_str  += '<option value="m&apos;">m&apos;</option>';
+            COLUMN_options_str  += '<option value="n">n</option>';
+            COLUMN_options_str  += '<option value="n&apos;">n&apos;</option>';
+            COLUMN_options_str  += '<option value="o">o</option>';
+            COLUMN_options_str  += '<option value="o&apos;">o&apos;</option>';
+            COLUMN_options_str  += '<option value="p">p</option>';
+            COLUMN_options_str  += '<option value="p&apos;">p&apos;</option>';
+            COLUMN_options_str  += '<option value="q">q</option>';
+            COLUMN_options_str  += '<option value="q&apos;">q&apos;</option>';
+            COLUMN_options_str  += '<option value="r">r</option>';
+            COLUMN_options_str  += '<option value="r&apos;">r&apos;</option>';
+            COLUMN_options_str  += '<option value="s">s</option>';
+            COLUMN_options_str  += '<option value="s&apos;">s&apos;</option>';
+            COLUMN_options_str  += '<option value="t">t</option>';
+            COLUMN_options_str  += '<option value="t&apos;">t&apos;</option>';
+            COLUMN_options_str  += '<option value="u">u</option>';
+            COLUMN_options_str  += '<option value="u&apos;">u&apos;</option>';
+            COLUMN_options_str  += '<option value="v">v</option>';
+            COLUMN_options_str  += '<option value="v&apos;">v&apos;</option>';
+            COLUMN_options_str  += '<option value="w">w</option>';
+            COLUMN_options_str  += '<option value="w&apos;">w&apos;</option>';
+            COLUMN_options_str  += '<option value="x">x</option>';
+            COLUMN_options_str  += '<option value="x&apos;">x&apos;</option>';
+            COLUMN_options_str  += '<option value="y">y</option>';
+            COLUMN_options_str  += '<option value="y&apos;">y&apos;</option>';
+            COLUMN_options_str  += '<option value="z">z</option>';
+            COLUMN_options_str  += '<option value="z&apos;">z&apos;</option>';
+            sel_COLUMN.innerHTML = COLUMN_options_str;
+            div_COLUMN.appendChild(sel_COLUMN);
+            var lab_COLUMN = document.createElement('div');
+            lab_COLUMN.innerHTML = 'COLUMN';
+            lab_COLUMN.className = 'filterlabel';
+            div_COLUMN.appendChild(lab_COLUMN);
+            var reset_COLUMN = document.createElement('div');
+            reset_COLUMN.innerHTML = 'clear filter';
+            reset_COLUMN.className = 'filterlabel';
+            reset_COLUMN.onclick = function() {
+                var options = document.getElementById("sel_COLUMN").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_COLUMN.appendChild(reset_COLUMN);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_ROW = document.createElement('div');
+            div_ROW.id = "div_ROW";
+            div_ROW.className= "filterselect";
+            document.getElementById("menu").appendChild(div_ROW);
+            sel_ROW = document.createElement('select');
+            sel_ROW.multiple = true;
+            sel_ROW.size = 10;
+            sel_ROW.id = "sel_ROW";
+            var ROW_options_str = "<option value='' unselected></option>";
+            sel_ROW.onchange = function(){filterFunc()};
+            ROW_options_str  += '<option value="1">1</option>';
+            ROW_options_str  += '<option value="1&apos;">1&apos;</option>';
+            ROW_options_str  += '<option value="10">10</option>';
+            ROW_options_str  += '<option value="10&apos;">10&apos;</option>';
+            ROW_options_str  += '<option value="100&apos;">100&apos;</option>';
+            ROW_options_str  += '<option value="101&apos;">101&apos;</option>';
+            ROW_options_str  += '<option value="102&apos;">102&apos;</option>';
+            ROW_options_str  += '<option value="103&apos;">103&apos;</option>';
+            ROW_options_str  += '<option value="104&apos;">104&apos;</option>';
+            ROW_options_str  += '<option value="105&apos;">105&apos;</option>';
+            ROW_options_str  += '<option value="106&apos;">106&apos;</option>';
+            ROW_options_str  += '<option value="11">11</option>';
+            ROW_options_str  += '<option value="11&apos;">11&apos;</option>';
+            ROW_options_str  += '<option value="12">12</option>';
+            ROW_options_str  += '<option value="12&apos;">12&apos;</option>';
+            ROW_options_str  += '<option value="13">13</option>';
+            ROW_options_str  += '<option value="13&apos;">13&apos;</option>';
+            ROW_options_str  += '<option value="14">14</option>';
+            ROW_options_str  += '<option value="14&apos;">14&apos;</option>';
+            ROW_options_str  += '<option value="15">15</option>';
+            ROW_options_str  += '<option value="15&apos;">15&apos;</option>';
+            ROW_options_str  += '<option value="16">16</option>';
+            ROW_options_str  += '<option value="16&apos;">16&apos;</option>';
+            ROW_options_str  += '<option value="17">17</option>';
+            ROW_options_str  += '<option value="17&apos;">17&apos;</option>';
+            ROW_options_str  += '<option value="18">18</option>';
+            ROW_options_str  += '<option value="18&apos;">18&apos;</option>';
+            ROW_options_str  += '<option value="19">19</option>';
+            ROW_options_str  += '<option value="19&apos;">19&apos;</option>';
+            ROW_options_str  += '<option value="2">2</option>';
+            ROW_options_str  += '<option value="2&apos;">2&apos;</option>';
+            ROW_options_str  += '<option value="20">20</option>';
+            ROW_options_str  += '<option value="20&apos;">20&apos;</option>';
+            ROW_options_str  += '<option value="21">21</option>';
+            ROW_options_str  += '<option value="21&apos;">21&apos;</option>';
+            ROW_options_str  += '<option value="22">22</option>';
+            ROW_options_str  += '<option value="22&apos;">22&apos;</option>';
+            ROW_options_str  += '<option value="23">23</option>';
+            ROW_options_str  += '<option value="23&apos;">23&apos;</option>';
+            ROW_options_str  += '<option value="24">24</option>';
+            ROW_options_str  += '<option value="24&apos;">24&apos;</option>';
+            ROW_options_str  += '<option value="25">25</option>';
+            ROW_options_str  += '<option value="25&apos;">25&apos;</option>';
+            ROW_options_str  += '<option value="26">26</option>';
+            ROW_options_str  += '<option value="26&apos;">26&apos;</option>';
+            ROW_options_str  += '<option value="27">27</option>';
+            ROW_options_str  += '<option value="27&apos;">27&apos;</option>';
+            ROW_options_str  += '<option value="28">28</option>';
+            ROW_options_str  += '<option value="28&apos;">28&apos;</option>';
+            ROW_options_str  += '<option value="29">29</option>';
+            ROW_options_str  += '<option value="29&apos;">29&apos;</option>';
+            ROW_options_str  += '<option value="3">3</option>';
+            ROW_options_str  += '<option value="3&apos;">3&apos;</option>';
+            ROW_options_str  += '<option value="30">30</option>';
+            ROW_options_str  += '<option value="30&apos;">30&apos;</option>';
+            ROW_options_str  += '<option value="31">31</option>';
+            ROW_options_str  += '<option value="31&apos;">31&apos;</option>';
+            ROW_options_str  += '<option value="32">32</option>';
+            ROW_options_str  += '<option value="32&apos;">32&apos;</option>';
+            ROW_options_str  += '<option value="33">33</option>';
+            ROW_options_str  += '<option value="33&apos;">33&apos;</option>';
+            ROW_options_str  += '<option value="34">34</option>';
+            ROW_options_str  += '<option value="34&apos;">34&apos;</option>';
+            ROW_options_str  += '<option value="35">35</option>';
+            ROW_options_str  += '<option value="35&apos;">35&apos;</option>';
+            ROW_options_str  += '<option value="36">36</option>';
+            ROW_options_str  += '<option value="36&apos;">36&apos;</option>';
+            ROW_options_str  += '<option value="37">37</option>';
+            ROW_options_str  += '<option value="37&apos;">37&apos;</option>';
+            ROW_options_str  += '<option value="38">38</option>';
+            ROW_options_str  += '<option value="38&apos;">38&apos;</option>';
+            ROW_options_str  += '<option value="39">39</option>';
+            ROW_options_str  += '<option value="39&apos;">39&apos;</option>';
+            ROW_options_str  += '<option value="4">4</option>';
+            ROW_options_str  += '<option value="4&apos;">4&apos;</option>';
+            ROW_options_str  += '<option value="40">40</option>';
+            ROW_options_str  += '<option value="40&apos;">40&apos;</option>';
+            ROW_options_str  += '<option value="41">41</option>';
+            ROW_options_str  += '<option value="41&apos;">41&apos;</option>';
+            ROW_options_str  += '<option value="42">42</option>';
+            ROW_options_str  += '<option value="42&apos;">42&apos;</option>';
+            ROW_options_str  += '<option value="43">43</option>';
+            ROW_options_str  += '<option value="43&apos;">43&apos;</option>';
+            ROW_options_str  += '<option value="44">44</option>';
+            ROW_options_str  += '<option value="44&apos;">44&apos;</option>';
+            ROW_options_str  += '<option value="45">45</option>';
+            ROW_options_str  += '<option value="45&apos;">45&apos;</option>';
+            ROW_options_str  += '<option value="46">46</option>';
+            ROW_options_str  += '<option value="46&apos;">46&apos;</option>';
+            ROW_options_str  += '<option value="47">47</option>';
+            ROW_options_str  += '<option value="47&apos;">47&apos;</option>';
+            ROW_options_str  += '<option value="48">48</option>';
+            ROW_options_str  += '<option value="48&apos;">48&apos;</option>';
+            ROW_options_str  += '<option value="49">49</option>';
+            ROW_options_str  += '<option value="49&apos;">49&apos;</option>';
+            ROW_options_str  += '<option value="5">5</option>';
+            ROW_options_str  += '<option value="5&apos;">5&apos;</option>';
+            ROW_options_str  += '<option value="50">50</option>';
+            ROW_options_str  += '<option value="50&apos;">50&apos;</option>';
+            ROW_options_str  += '<option value="51">51</option>';
+            ROW_options_str  += '<option value="51&apos;">51&apos;</option>';
+            ROW_options_str  += '<option value="52">52</option>';
+            ROW_options_str  += '<option value="52&apos;">52&apos;</option>';
+            ROW_options_str  += '<option value="53">53</option>';
+            ROW_options_str  += '<option value="53&apos;">53&apos;</option>';
+            ROW_options_str  += '<option value="54">54</option>';
+            ROW_options_str  += '<option value="54&apos;">54&apos;</option>';
+            ROW_options_str  += '<option value="55">55</option>';
+            ROW_options_str  += '<option value="55&apos;">55&apos;</option>';
+            ROW_options_str  += '<option value="56">56</option>';
+            ROW_options_str  += '<option value="56&apos;">56&apos;</option>';
+            ROW_options_str  += '<option value="57">57</option>';
+            ROW_options_str  += '<option value="57&apos;">57&apos;</option>';
+            ROW_options_str  += '<option value="58">58</option>';
+            ROW_options_str  += '<option value="58&apos;">58&apos;</option>';
+            ROW_options_str  += '<option value="59">59</option>';
+            ROW_options_str  += '<option value="59&apos;">59&apos;</option>';
+            ROW_options_str  += '<option value="6">6</option>';
+            ROW_options_str  += '<option value="6&apos;">6&apos;</option>';
+            ROW_options_str  += '<option value="60">60</option>';
+            ROW_options_str  += '<option value="60&apos;">60&apos;</option>';
+            ROW_options_str  += '<option value="61">61</option>';
+            ROW_options_str  += '<option value="61&apos;">61&apos;</option>';
+            ROW_options_str  += '<option value="62">62</option>';
+            ROW_options_str  += '<option value="62&apos;">62&apos;</option>';
+            ROW_options_str  += '<option value="63">63</option>';
+            ROW_options_str  += '<option value="63&apos;">63&apos;</option>';
+            ROW_options_str  += '<option value="64">64</option>';
+            ROW_options_str  += '<option value="64&apos;">64&apos;</option>';
+            ROW_options_str  += '<option value="65">65</option>';
+            ROW_options_str  += '<option value="65&apos;">65&apos;</option>';
+            ROW_options_str  += '<option value="66&apos;">66&apos;</option>';
+            ROW_options_str  += '<option value="67&apos;">67&apos;</option>';
+            ROW_options_str  += '<option value="68&apos;">68&apos;</option>';
+            ROW_options_str  += '<option value="69&apos;">69&apos;</option>';
+            ROW_options_str  += '<option value="7">7</option>';
+            ROW_options_str  += '<option value="7&apos;">7&apos;</option>';
+            ROW_options_str  += '<option value="70&apos;">70&apos;</option>';
+            ROW_options_str  += '<option value="71&apos;">71&apos;</option>';
+            ROW_options_str  += '<option value="72&apos;">72&apos;</option>';
+            ROW_options_str  += '<option value="73&apos;">73&apos;</option>';
+            ROW_options_str  += '<option value="74&apos;">74&apos;</option>';
+            ROW_options_str  += '<option value="75&apos;">75&apos;</option>';
+            ROW_options_str  += '<option value="76&apos;">76&apos;</option>';
+            ROW_options_str  += '<option value="77&apos;">77&apos;</option>';
+            ROW_options_str  += '<option value="78&apos;">78&apos;</option>';
+            ROW_options_str  += '<option value="79&apos;">79&apos;</option>';
+            ROW_options_str  += '<option value="8">8</option>';
+            ROW_options_str  += '<option value="8&apos;">8&apos;</option>';
+            ROW_options_str  += '<option value="80&apos;">80&apos;</option>';
+            ROW_options_str  += '<option value="81&apos;">81&apos;</option>';
+            ROW_options_str  += '<option value="82&apos;">82&apos;</option>';
+            ROW_options_str  += '<option value="83&apos;">83&apos;</option>';
+            ROW_options_str  += '<option value="84&apos;">84&apos;</option>';
+            ROW_options_str  += '<option value="85&apos;">85&apos;</option>';
+            ROW_options_str  += '<option value="86&apos;">86&apos;</option>';
+            ROW_options_str  += '<option value="87&apos;">87&apos;</option>';
+            ROW_options_str  += '<option value="88&apos;">88&apos;</option>';
+            ROW_options_str  += '<option value="89&apos;">89&apos;</option>';
+            ROW_options_str  += '<option value="9">9</option>';
+            ROW_options_str  += '<option value="9&apos;">9&apos;</option>';
+            ROW_options_str  += '<option value="90&apos;">90&apos;</option>';
+            ROW_options_str  += '<option value="91&apos;">91&apos;</option>';
+            ROW_options_str  += '<option value="92&apos;">92&apos;</option>';
+            ROW_options_str  += '<option value="93&apos;">93&apos;</option>';
+            ROW_options_str  += '<option value="94&apos;">94&apos;</option>';
+            ROW_options_str  += '<option value="95&apos;">95&apos;</option>';
+            ROW_options_str  += '<option value="96&apos;">96&apos;</option>';
+            ROW_options_str  += '<option value="97&apos;">97&apos;</option>';
+            ROW_options_str  += '<option value="98&apos;">98&apos;</option>';
+            ROW_options_str  += '<option value="99&apos;">99&apos;</option>';
+            sel_ROW.innerHTML = ROW_options_str;
+            div_ROW.appendChild(sel_ROW);
+            var lab_ROW = document.createElement('div');
+            lab_ROW.innerHTML = 'ROW';
+            lab_ROW.className = 'filterlabel';
+            div_ROW.appendChild(lab_ROW);
+            var reset_ROW = document.createElement('div');
+            reset_ROW.innerHTML = 'clear filter';
+            reset_ROW.className = 'filterlabel';
+            reset_ROW.onclick = function() {
+                var options = document.getElementById("sel_ROW").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_ROW.appendChild(reset_ROW);
+        </script>
+    </body>
+</html>
